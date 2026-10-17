@@ -36,14 +36,14 @@ Créer une alternative Android libre, simple, réactive et personnalisable aux g
 - Synchronisation CardDAV directe avec plusieurs comptes personnels, hors dépendance obligatoire à DAVx⁵ ; statut de synchronisation par compte, action de synchronisation manuelle, gestion des erreurs et mode hors ligne.
 - Synchronisation bidirectionnelle sûre après implémentation des mécanismes de versionnement, conflits et suppressions distantes.
 
-## 4. Modèle de stockage : décision à confirmer avant le code métier
+## 4. Modèle de stockage : Contacts Provider Android retenu
 
-Deux approches ne doivent pas être mélangées sans raison :
+L'architecture retient le **Contacts Provider Android** (`ContactsContract` et `ContentResolver`) comme source principale de données :
 
-1. **Contacts Provider Android** (proposition privilégiée) : les contacts sont ceux du système, disponibles dans les autres applications et organisés par comptes. La synchronisation CardDAV pourrait utiliser le framework SyncAdapter/AccountManager.
-2. **Base privée Room** : modèle et synchronisation contrôlés entièrement par l'application, mais les contacts restent isolés de l'annuaire Android et ne deviennent pas automatiquement visibles dans les autres applications.
+1. **Contacts Provider Android** (validé) : les contacts sont ceux du système, partagés avec les autres applications et organisés par comptes (`RawContacts` agrégés en `Contacts`). L'application utilise les permissions appropriées (`READ_CONTACTS`, `WRITE_CONTACTS`) et gère rigoureusement la propriété des fiches.
+2. **Base privée Room** (écartée pour les contacts) : non introduite comme seconde base primaire de contacts afin d'éviter les doubles écritures et les doublons. Room pourra être utilisé ultérieurement uniquement pour un besoin documenté et justifié de métadonnées spécifiques à l'application.
 
-Le responsable du projet doit approuver l'approche après avoir comparé intégration, complexité, permissions, comportement multi-compte et implications de suppression. Ne commencer ni une migration ni une implémentation de synchronisation complète avant cette décision.
+Le périmètre initial couvre la gestion locale (consultation, recherche, affichage, création, édition, suppression, actions système). La synchronisation directe CardDAV multi-comptes constitue une phase ultérieure qui exigera une étude préalable d'`AccountManager`, `SyncAdapter`, de la propriété des fiches, des identifiants distants, des ETag, des conflits et de la gestion des suppressions.
 
 ## 5. Confidentialité et flux de données attendus
 
@@ -92,7 +92,6 @@ Le responsable du projet doit approuver l'approche après avoir comparé intégr
 
 Les éléments suivants doivent être discutés et approuvés avant d'être transformés en contraintes d'implémentation :
 
-- Contacts Provider Android ou stockage privé Room ?
 - Quels contacts doivent être visibles : tous les comptes système, contacts locaux uniquement, ou filtres par source ?
 - Comportement des contacts Google/autres comptes non modifiables par l'app.
 - Nom définitif, identifiant de package, `minSdk`, et langues pour la première version.

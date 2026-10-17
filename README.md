@@ -44,7 +44,7 @@ Les contacts restent dans la source de stockage choisie sur l'appareil, sauf exp
 
 - [`docs/PROJECT_PROFILE.md`](docs/PROJECT_PROFILE.md) — état du projet, décisions confirmées et décisions ouvertes.
 - [`docs/PRODUCT.md`](docs/PRODUCT.md) — objectifs fonctionnels et critères d'acceptation.
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — options et architecture à approuver.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — modèle de contacts et architecture.
 - [`docs/CARDDAV_SYNC.md`](docs/CARDDAV_SYNC.md) — exigences de synchronisation des contacts.
 - [`docs/PRIVACY.md`](docs/PRIVACY.md) — flux de données et garanties attendues.
 - [`DESIGN.md`](DESIGN.md) — système visuel Soft Motion et configuration de cette application.
