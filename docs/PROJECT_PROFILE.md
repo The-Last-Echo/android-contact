@@ -23,15 +23,16 @@
 
 ## Produit
 
-Gestionnaire de contacts Android léger, agréable, accessible et personnalisable ; gestion locale des contacts, actions système, import/export vCard, et synchronisation directe CardDAV multi-comptes à terme.
+Gestionnaire de contacts Android léger, agréable, accessible et personnalisable ; gestion locale des contacts et actions système dans le périmètre initial, import/export vCard, et synchronisation directe CardDAV multi-comptes dans une phase ultérieure.
 
 ## Modèle de données et intégrations
 
-- Source de contacts : Contacts Provider Android ou base Room privée ; décision d'architecture encore à approuver.
-- Synchronisation : CardDAV direct, plusieurs comptes, activation explicite par l'utilisateur.
+- Source de contacts : Contacts Provider Android (`ContactsContract` et `ContentResolver`) validé comme source principale. Pas de Room comme seconde base de contacts ; Room réservé si besoin futur avéré à des métadonnées spécifiques.
+- Périmètre initial (bootstrap) : consultation locale, recherche, affichage détaillé, création, édition, suppression de contacts et déclenchement d'actions système, sous réserve des permissions requises (`READ_CONTACTS`, `WRITE_CONTACTS`) et des tests associés.
+- Synchronisation : CardDAV direct multi-comptes planifié dans une phase ultérieure (hors bootstrap initial). Étude préalable obligatoire de l'`AccountManager`, du `SyncAdapter`, de la propriété des fiches, des identifiants distants, des ETag, des conflits, des suppressions, des retries et de la prévention des pertes de données.
 - Import/export : `.vcf` via Storage Access Framework, sans permission générale de stockage si elle n'est pas nécessaire.
 - Appels/SMS/e-mails : intents système, pas d'envoi automatique.
-- Réseau : aucune requête sans une fonction explicitement activée et une destination connue.
+- Réseau : aucune requête sans une fonction explicitement activée et une destination connue (aucun trafic réseau dans le périmètre initial).
 - Les permissions, les capacités de modification réelles et l'appartenance aux comptes doivent être vérifiées avant d'éditer ou de supprimer un RawContact ; un seul indicateur de lecture seule ne garantit pas à lui seul le succès d'une écriture.
 
 ## Versionnement et distribution — exigences du propriétaire
@@ -60,14 +61,14 @@ La génération des APK et de la GitHub Release n'est pas encore automatique. Ne
 - Les fichiers `AGENTS.md` et `.github/copilot-instructions.md` sont locaux et doivent rester hors du suivi Git via `.git/info/exclude`.
 - Les conventions publiques destinées aux contributeurs sont dans `docs/DEVELOPMENT_WORKFLOW.md`.
 
-## Décisions d'architecture à approuver
+## Décisions d'architecture
 
-| Sujet | État | Proposition actuelle | Pourquoi c'est important |
+| Sujet | État | Décision / Proposition | Pourquoi c'est important |
 |---|---|---|---|
-| Modèle contacts | À approuver | Étudier en premier le Contacts Provider | Visibilité système, permissions, propriété et risque de suppressions |
-| Synchronisation | À approuver | Compte Android + mécanisme de synchronisation dédié si viable | Multi-comptes et intégration Android, mais davantage de complexité |
+| Modèle contacts | Confirmé (Contacts Provider) | Contacts Provider Android (`ContactsContract` / `ContentResolver`) retenu comme source principale. Pas de Room pour les contacts primaires ; Room réservé à d'éventuelles métadonnées spécifiques justifiées. | Visibilité système, modèle de comptes, gestion des permissions, distinction Contacts/RawContacts et intégrité des fiches |
+| Synchronisation | Phase ultérieure | CardDAV direct multi-comptes différé après le bootstrap initial. Étude préalable : `AccountManager`, `SyncAdapter`, propriété, identifiants distants, ETag, conflits, suppressions et retries. | Multi-comptes et intégration Android, sans risque pour les données |
 | Contacts de tiers | À décider | Montrer la source et n'éditer que les enregistrements dont la modification est autorisée | Éviter d'altérer les comptes externes |
-| Import/export vCard | Prévu | Prioriser après choix du modèle de données | Portabilité et sauvegarde |
+| Import/export vCard | Prévu | Prioriser après stabilisation de la gestion locale des contacts | Portabilité et sauvegarde |
 | Groupes/étiquettes | Phase ultérieure probable | Définir la correspondance avec groupes Android et `CATEGORIES` vCard | Les groupes peuvent dépendre du compte ou serveur |
 | Authentification CardDAV | À rechercher | Choisir après sélection des serveurs cibles | Interopérabilité et sécurité des identifiants |
 | Conflits CardDAV | À définir avant sync bidirectionnelle | Préserver les données et éviter tout écrasement silencieux | Prévention de pertes |
