@@ -1,0 +1,44 @@
+
+# IDE: Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+.idea_modules/
+
+# Local machine configuration and secrets
+local.properties
+.env
+.env.*
+!.env.example
+
+# Gradle
+.gradle/
+**/build/
+build/
+
+# Android build artifacts
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Signing keys and private credentials
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+
+# Kotlin / Java
+*.class
+
+# Logs
+*.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
