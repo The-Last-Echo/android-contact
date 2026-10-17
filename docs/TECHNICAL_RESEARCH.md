@@ -1,72 +1,86 @@
-# Notes de recherche technique — 17 octobre 2026
+# Notes de recherche technique
 
-Ce document rassemble les résultats pertinents pour la conception initiale. Les pages officielles et leurs versions en vigueur doivent être relues au moment de l'implémentation, car les API, les versions et les politiques évoluent.
+> Document de synthèse évolutif. Les versions de SDK, outils, bibliothèques et politiques citées par date ne sont pas des vérités permanentes. Les versions stables et la documentation officielle doivent être revérifiées au moment du bootstrap et avant toute mise à jour majeure.
 
-## Conclusions utiles
+## 1. Contacts Provider Android
 
-### Android Contacts Provider
+La documentation officielle décrit les contacts agrégés construits à partir de RawContacts provenant de différentes sources et comptes, ainsi que l'intégration via les mécanismes de synchronisation Android. Cette approche peut convenir à une application qui veut être un gestionnaire de contacts du système, mais introduit des responsabilités de propriété, d'agrégation, de permissions et de synchronisation.
 
-La documentation officielle explique que le Contacts Provider maintient les contacts agrégés à partir de RawContacts provenant de différentes sources et comptes. Il est prévu pour des données de contacts locales et synchronisées et expose un mécanisme SyncAdapter pour intégrer les données d'un service distant. Un type de compte peut avoir plusieurs noms de compte. Cette option convient au besoin d'une app de contacts Android et d'une synchronisation CardDAV qui ne dépend pas de l'installation d'un autre gestionnaire.
-
-Conséquence : modèle source-compte, permissions, RawContacts, agrégation et synchronisation sont des sujets centraux. Ne pas traiter Contact ID comme l'identifiant d'une fiche distante unique et ne pas écrire/supprimer sans vérifier la source.
+Ne pas utiliser le seul identifiant du contact agrégé pour déterminer la ressource distante unique. Ne pas supposer qu'un indicateur de lecture seule égal à zéro garantit que toute modification réussira : permissions, propriétaire, capacités de source et résultat réel de l'écriture restent à contrôler.
 
 Source : https://developer.android.com/identity/providers/contacts-provider
 
-### CardDAV et vCard
+## 2. CardDAV et vCard
 
-CardDAV (RFC 6352) est le protocole pour les carnets de contacts basés sur vCard. CalDAV (RFC 4791) s'applique aux calendriers. RFC 6764 documente la découverte des endpoints et les URI `.well-known/carddav`/`.well-known/caldav`. Les identifiants distants et les versions de ressources doivent être suivis afin d'éviter d'écraser une modification concurrente.
+CardDAV (RFC 6352) sert aux carnets de contacts basés sur vCard. CalDAV (RFC 4791) concerne les calendriers. RFC 6764 définit des règles de découverte. Les identifiants distants, ETag et jetons de synchronisation éventuels doivent être étudiés afin d'éviter les écrasements et suppressions injustifiés.
 
-Sources :
-- https://www.rfc-editor.org/rfc/rfc6352
-- https://www.rfc-editor.org/rfc/rfc4791
-- https://www.rfc-editor.org/rfc/rfc6764
-- https://www.rfc-editor.org/rfc/rfc6350
-- https://www.rfc-editor.org/rfc/rfc6578
+- CardDAV : https://www.rfc-editor.org/rfc/rfc6352
+- CalDAV : https://www.rfc-editor.org/rfc/rfc4791
+- Découverte : https://www.rfc-editor.org/rfc/rfc6764
+- vCard : https://www.rfc-editor.org/rfc/rfc6350
+- WebDAV Sync Collection : https://www.rfc-editor.org/rfc/rfc6578
 
-### Listes et performances Compose
+## 3. Architecture, Compose et performance
 
-La documentation Compose recommande des listes paresseuses pour les collections longues, car une `Column` qui compose tous les éléments peut provoquer des problèmes de performance. Paging est une option si le besoin le justifie. Les photos doivent aussi être chargées en miniatures bornées et les accès I/O/réseau ne doivent pas bloquer le thread UI.
+La documentation Android recommande des couches de données et UI séparées, des repositories et des flux unidirectionnels. Un domaine/use-case séparé se justifie quand il simplifie la complexité, mais n'est pas obligatoire pour toutes les applications. Les listes longues doivent être conçues avec des listes paresseuses, des identifiants stables et des chargements d'images maîtrisés.
 
-Source : https://developer.android.com/develop/ui/compose/lists
+- Architecture : https://developer.android.com/topic/architecture/recommendations
+- Listes Compose : https://developer.android.com/develop/ui/compose/lists
+- Room : https://developer.android.com/training/data-storage/room
 
-### Architecture
+## 4. Versions Android et toolchain
 
-Android recommande une couche de données clairement définie, des repositories, une couche UI distincte, des flux unidirectionnels et coroutines/flows ; un domaine avec use cases est recommandé surtout quand il simplifie la complexité, pas comme obligation pour toutes les apps.
+Ne pas fixer les SDK Android ou versions Kotlin/AGP/Gradle/JDK d'après un ancien rapport ou la date de ce document. Au moment du bootstrap :
 
-Source : https://developer.android.com/topic/architecture/recommendations
+1. consulter les pages officielles des versions Android et les notes de version de l'Android Gradle Plugin, Gradle, Kotlin et JDK ;
+2. vérifier une matrice de versions mutuellement compatibles ;
+3. choisir le `minSdk` en fonction de la compatibilité utilisateur et des API réellement nécessaires ;
+4. utiliser des versions stables, documenter les choix et verrouiller le Gradle Wrapper ;
+5. revérifier les exigences et recommandations en vigueur avant une release majeure.
 
-### Dépendances
+- Versions Android : https://developer.android.com/about/versions
+- Releases du plugin Android Gradle : https://developer.android.com/build/releases/gradle-plugin
+- Wrapper Gradle : https://docs.gradle.org/current/userguide/gradle_wrapper.html
 
-La vérification Gradle peut contrôler les sommes de contrôle et signatures des artefacts et détecter un remplacement inattendu. Le bootstrap est sensible : il ne faut pas faire confiance automatiquement à la première résolution si la provenance n'a pas été vérifiée. Les versions et dépendances doivent être verrouillées et examinées.
+## 5. Dépendances et provenance
 
-Source : https://docs.gradle.org/current/userguide/dependency_verification.html
+La présence d'une bibliothèque candidate dans ce document n'est pas son approbation. Examiner la licence source de la version exacte, les POM/métadonnées, les transitives, l'origine des artefacts, la maintenance, les besoins réseau et l'impact sur la compilation depuis les sources. Toute exclusion transitive doit être suivie de tests prouvant que les fonctions retenues continuent de fonctionner.
 
-### F-Droid
+- Vérification des dépendances Gradle : https://docs.gradle.org/current/userguide/dependency_verification.html
+- Inventaire du projet : `THIRD_PARTY.md`
 
-La politique actuelle demande que les composants distribués soient libres, que les sources soient disponibles et construites, et interdit les SDK propriétaires de publicité/suivi. La reproductibilité et la disponibilité de l'ensemble de la chaîne de build comptent. Une licence GPL seule ne garantit pas l'acceptation.
+## 6. F-Droid et builds reproductibles
 
-Sources :
-- https://f-droid.org/docs/Inclusion_Policy/
-- https://f-droid.org/docs/Reproducible_Builds/
-- https://f-droid.org/en/docs/Update_Processing/
+Une licence libre est nécessaire mais ne garantit pas l'inclusion. Il faut vérifier toutes les dépendances et ressources, la disponibilité des sources, l'absence de SDK de suivi/publicité interdits, la capacité du serveur de build à construire le projet et, autant que possible, la reproductibilité.
 
-## Candidats explorés — aucune dépendance encore choisie
+- Politique d'inclusion : https://f-droid.org/docs/Inclusion_Policy/
+- Builds reproductibles : https://f-droid.org/docs/Reproducible_Builds/
+- Traitement des mises à jour : https://f-droid.org/en/docs/Update_Processing/
+
+## 7. Versionnement et GitHub Releases
+
+Le projet doit suivre Semantic Versioning pour les versions visibles, documenter les changements dans `CHANGELOG.md` et lier chaque release à un tag immuable. Le `versionName` Android correspond à la version du tag sans son préfixe `v`, tandis que `versionCode` est géré comme un entier strictement croissant. La stratégie exacte est définie dans `docs/RELEASING.md`.
+
+- Semantic Versioning : https://semver.org/lang/fr/
+- Keep a Changelog : https://keepachangelog.com/fr/1.1.0/
+- Android versioning : https://developer.android.com/studio/publish/versioning
+- GitHub Releases : https://docs.github.com/repositories/releasing-projects-on-github/about-releases
+- Sécurité GitHub Actions : https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions
+
+## 8. Bibliothèques candidates — non approuvées
 
 ### `dav4jvm`
 
-Le dépôt amont le décrit comme bibliothèque WebDAV/CalDAV/CardDAV pour Java/Kotlin, développée à l'origine pour DAVx⁵ et sous licence MPL-2.0. Il utilise Ktor et documente les opérations asynchrones/suspendues. La réutilisation de la bibliothèque ne signifie pas dépendre de l'application DAVx⁵, mais il reste nécessaire d'examiner la version publiée, la provenance des artefacts, les versions transitives, la politique de redirect/authentification et le build F-Droid.
+Projet amont : https://github.com/bitfireAT/dav4jvm
 
-- Dépôt : https://github.com/bitfireAT/dav4jvm
-- Licence annoncée : MPL-2.0
-- Dernière publication visible lors de la recherche : version 4.1.0, page de versions consultée le 17 octobre 2026 ; vérifier à nouveau à l'implémentation.
+Candidate WebDAV/CardDAV Java/Kotlin. Vérifier au moment du choix la version exacte, la licence, les releases et l'origine des artefacts, Ktor et ses moteurs, les transitives et la possibilité d'intégrer la source dans le build F-Droid. Ne jamais supposer qu'un artefact est sur Maven Central sans vérifier ses coordonnées et le dépôt qui le sert.
 
 ### `ez-vcard`
 
-Le dépôt décrit un parseur/écrivain Java pour vCard 2.1, 3.0 et 4.0, avec prise en charge Android annoncée. La version 0.12.2 a été annoncée le 15 février 2026 ; les métadonnées Maven déclarent la FreeBSD/BSD license. Examiner sa licence exacte, les transitives (dont le parseur) et l'adéquation aux données CardDAV à utiliser avant adoption.
+Projet amont : https://github.com/mangstadt/ez-vcard
 
-- Dépôt : https://github.com/mangstadt/ez-vcard
-- Métadonnées Maven : https://central.sonatype.com/artifact/com.googlecode.ez-vcard/ez-vcard
+Candidate vCard. Vérifier le fichier de licence et les en-têtes de la version exacte, le POM et les transitives réelles. N'exclure ni `jsoup`, ni Jackson, ni FreeMarker sur la seule base d'un audit antérieur : examiner les fonctionnalités nécessaires et exécuter les tests de parsing/écriture après chaque exclusion.
 
-## Limites de la recherche
+## Limites
 
-Les documents officiels définissent les bases, mais ne décident pas du meilleur stockage pour ce produit. La sélection du Contacts Provider ou d'une base Room privée nécessite un choix produit explicite. La compatibilité concrète avec chaque serveur CardDAV doit être démontrée par des tests d'interopérabilité, pas inférée de la seule conformité théorique au RFC.
+Cette synthèse aide au cadrage mais ne remplace pas l'examen des sources primaires au moment de l'implémentation. Aucun choix d'architecture ou de dépendance ne doit être considéré comme approuvé uniquement parce qu'il apparaît ici.

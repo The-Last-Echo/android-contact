@@ -1,101 +1,102 @@
 # Architecture — proposition à approuver
 
-> Le projet n'est pas encore implémenté. Ce document décrit une proposition de départ et des options, pas une architecture existante.
+> Le projet n'est pas encore implémenté. Ce document décrit des options, pas une architecture déjà présente dans le code.
 
-## 1. Recommandation en résumé
+## 1. Recommandation provisoire
 
-Pour une application qui doit jouer le rôle de gestionnaire de contacts Android, afficher les comptes existants et fournir à terme une synchronisation CardDAV native multi-comptes, privilégier **Android Contacts Provider** comme source des contacts, via `ContentResolver` et `ContactsContract`. Si cette approche est approuvée, envisager le mécanisme Android `AccountManager` + `AbstractThreadedSyncAdapter` pour enregistrer plusieurs comptes CardDAV et synchroniser les contacts vers le fournisseur système.
+Pour une application destinée à devenir un véritable gestionnaire de contacts Android et à prendre en charge à terme plusieurs comptes CardDAV, privilégier l'étude du **Contacts Provider Android** (`ContentResolver` et `ContactsContract`). Si cette approche est approuvée, évaluer `AccountManager` et l'architecture de synchronisation Android pour représenter chaque compte CardDAV.
 
-C'est une architecture plus complexe qu'une base privée, mais elle rend les contacts disponibles aux autres applications et utilise le modèle de comptes/synchronisation prévu par Android. La documentation Android indique que Contacts Provider réunit des contacts bruts provenant de comptes distincts, les agrège et prévoit des sync adapters pour échanger avec un service distant.
-
-**Ne pas implémenter l'approche avant que le responsable du projet l'ait approuvée.** Le premier travail de conception doit comparer les options et rendre visibles leurs conséquences.
+Cette option expose les contacts aux autres applications et profite du modèle système des comptes, mais complexifie la propriété des fiches, l'agrégation, les permissions et la synchronisation. Le propriétaire doit approuver l'approche après la comparaison avec une base privée Room. Ne pas implémenter de synchronisation complète avant cette décision.
 
 ## 2. Options de stockage
 
-### Option A — Contacts Provider (recommandée, à valider)
+### Option A — Contacts Provider (à approuver)
 
-- Lecture/écriture par `ContactsContract` et `ContentResolver`.
-- Demander `READ_CONTACTS`/`WRITE_CONTACTS` au moment nécessaire, expliquer le bénéfice et gérer le refus/la révocation.
-- Respecter l'identité de chaque RawContact, de chaque compte et les règles d'agrégation de contacts d'Android.
-- Éviter de présenter une entrée agrégée comme une donnée qui peut être modifiée/supprimée intégralement sans vérifier ses RawContacts et sources.
-- Le CardDAV peut être représenté comme un type de compte Android avec son propre sync adapter ; chaque compte a sa propre identité, collection distante, état et credentials.
-- Ne pas supposer que toutes les sources de contacts sont éditables ou synchronisables par l'app.
+- Lecture/écriture via `ContactsContract` et `ContentResolver`.
+- Demander `READ_CONTACTS` et `WRITE_CONTACTS` au moment pertinent, expliquer leur utilité et traiter le refus/la révocation.
+- Distinguer les lignes agrégées (`Contacts`) des contacts bruts (`RawContacts`) et des données (`Data`).
+- Toute édition/suppression doit porter sur le `RawContact` ciblé et vérifier la propriété, les permissions et les capacités effectives de la source. `IS_READ_ONLY` constitue une information utile mais ne garantit pas à lui seul qu'une écriture réussira.
+- Ne pas supposer que tous les comptes externes sont modifiables ou synchronisables par l'application.
+- Le compte CardDAV pourra être exposé au système si la conception et les tests confirment le choix d'un adaptateur de synchronisation natif.
 
 ### Option B — base privée Room
 
-- Stocker les fiches dans Room et exposer les flux par des repositories.
-- La synchronisation serait contrôlée par l'application, probablement avec WorkManager ; gérer son propre modèle de conflits, UID distants, ETag, suppressions, identifiants et migrations.
-- Les contacts resteraient dans l'app et ne seraient pas automatiquement disponibles dans les autres applications ou le composeur système.
-- Éviter d'ajouter un second store en plus du Contacts Provider sans exigence métier nette ; la double écriture crée des problèmes de conflits, doublons et perte de données.
+- Stocker les fiches dans Room et exposer les flux via des repositories.
+- Contrôler la synchronisation au sein de l'application et concevoir son propre modèle d'identifiants distants, ETag, conflits, suppressions et migrations.
+- Les contacts ne seront pas automatiquement visibles dans les autres applications Android.
+- Ne pas ajouter un deuxième stockage en parallèle du Contacts Provider sans exigence produit démontrée : les doubles écritures créent un risque de conflit et de doublons.
 
 ## 3. Structure logique proposée
 
-À adapter selon l'option retenue et la taille réelle du code. Pas de multi-module ou couche de domaine obligatoire sans bénéfice démontré.
+À adapter à la taille réelle du projet ; aucun multi-module ou use-case séparé n'est obligatoire sans bénéfice concret.
 
-- `ui/contacts` : liste, recherche, filtres et états d'écran.
-- `ui/contactdetail` : fiche, champ, photo et actions.
-- `ui/contactedit` : ajout/modification et validation.
-- `ui/settings` : préférences, comptes et options activées.
-- `data/contacts` : adaptateur du Contacts Provider ou accès Room, selon la décision.
-- `data/vcard` : import/export et mapping vCard lorsqu'implémenté.
-- `data/carddav` : accès protocole, découverte, authentification, opérations distantes et modèles de réponse.
-- `sync` : orchestration, état de synchronisation, comparaison locale/distante, conflits et planification si la fonctionnalité est activée.
-- `core/designsystem` : uniquement les tokens et composants réutilisables effectivement nécessaires.
+- `ui/contacts` : liste, recherche et états d'écran.
+- `ui/contactdetail` : fiche, champs, photo et actions.
+- `ui/contactedit` : création/modification et validation.
+- `ui/settings` : préférences et comptes si activés.
+- `data/contacts` : adaptateur Contacts Provider ou Room selon la décision.
+- `data/vcard` : import/export et mapping vCard.
+- `data/carddav` : découverte, authentification, requêtes, modèles/réponses.
+- `sync` : orchestration, état, suivi des versions, conflits et planification lorsque cette fonction est activée.
+- `core/designsystem` : tokens/composants effectivement réutilisables, sans module séparé forcé.
 
-Flux recommandé : UI Compose → ViewModel/UI state → repository → source de données approuvée. Les composables ne doivent pas appeler directement `ContentResolver`, la base, le réseau ou manipuler les credentials.
+Flux recommandé : Compose UI → état UI/ViewModel → repository → source de données approuvée. Les composables ne doivent pas appeler directement le réseau, la base, `ContentResolver` ou manipuler des secrets.
 
-## 4. Interface et état
+## 4. Interface, état et performances
 
-- Kotlin + Jetpack Compose pour un nouveau projet.
-- Architecture en couches raisonnable, flux unidirectionnel, état UI observable (`StateFlow` si approprié) et coroutines pour les opérations asynchrones.
-- Ne pas bloquer le thread principal avec des requêtes de contacts, de fichiers, des images ou le réseau.
-- Employer `LazyColumn`/chargement incrémental lorsque nécessaire ; mettre des clés stables et réduire les conversions/lectures répétées.
-- Garder les composants adaptatifs et les chaînes localisées. Un module de design séparé ne doit être ajouté que s'il réduit réellement la complexité.
+- Kotlin + Jetpack Compose pour ce nouveau projet.
+- Séparer l'UI de la couche de données ; utiliser `StateFlow`/coroutines lorsque cela simplifie l'observation et les opérations asynchrones.
+- Ne jamais bloquer le thread principal avec les contacts, les fichiers, les images ou le réseau.
+- Utiliser `LazyColumn`/pagination seulement quand le besoin le justifie, avec des clés stables et un cache de miniatures borné.
+- Localiser les chaînes et prendre en charge RTL, grandes polices, accessibilité et fenêtres adaptatives selon le périmètre convenu.
 
 ## 5. Synchronisation CardDAV
 
-La synchronisation est une fonctionnalité distincte, sensible et potentiellement destructive ; ne pas la développer à partir d'un simple test HTTP. Lire `CARDDAV_SYNC.md` et traiter ses exigences comme des critères de conception.
+CardDAV est une fonctionnalité distincte, sensible et potentiellement destructive. Lire `CARDDAV_SYNC.md`. Une simple requête HTTP réussie ne prouve pas qu'un cycle de synchronisation est sûr.
 
-Si le Contacts Provider est retenu, examiner un compte Android + SyncAdapter afin de synchroniser les RawContacts du compte ciblé, préserver `SOURCE_ID`/identifiants distants et respecter les indicateurs de modification/synchronisation du fournisseur. Documenter le cycle de vie, l'authentification, le travail en arrière-plan et la gestion des erreurs. Ne pas faire fonctionner deux planificateurs concurrents pour une seule synchronisation sans raison documentée.
+Si Contacts Provider est retenu, étudier le cycle de vie de chaque compte, les identifiants distants, les marqueurs de synchronisation, les ETag, la suppression et les conflits. Ne pas faire coexister deux planificateurs pour une même fonction sans raison démontrée.
 
-Si la base Room est retenue, employer des transactions, des migrations versionnées et une stratégie de synchronisation idempotente distincte. Ne jamais utiliser une liste de contacts vide obtenue après erreur réseau comme signal de suppression.
+Si Room est retenu, employer des transactions, migrations versionnées et un protocole idempotent. Une collection vide obtenue après erreur réseau ne doit jamais déclencher une suppression.
 
-## 6. Persistance et préférences
+## 6. Persistance, secrets et données
 
-- Ne créer une base Room que si les données sont détenues par l'application (option B ou métadonnées spécifiques réellement nécessaires).
+- Créer une base Room uniquement si les données sont détenues par l'application ou si des métadonnées spécifiques la justifient.
 - Préférences non sensibles : DataStore si utile.
-- Secrets de comptes : choisir un mécanisme de stockage fondé sur les API Android actuelles et documenter sa revue de sécurité avant implémentation ; jamais en clair.
-- Les photos ne doivent pas être chargées en pleine résolution pour chaque ligne. Charger des miniatures dimensionnées et conserver un cache borné.
-- Les migrations ou modifications de schéma doivent être testées, jamais résolues en effaçant automatiquement les données existantes.
+- Secrets de compte : choisir une stratégie fondée sur des API Android actuelles, la documenter et la vérifier avant implémentation ; jamais en clair.
+- Les photos de liste doivent être dimensionnées ; borner cache et mémoire.
+- Toute évolution de schéma doit être versionnée et testée. Ne jamais résoudre automatiquement un problème de migration en supprimant les données utilisateur.
 
 ## 7. Actions système
 
-- Appel : ouvrir le composeur avec le numéro sélectionné.
+- Appel : ouvrir le composeur avec le numéro choisi.
 - SMS : ouvrir une application compatible avec une URI `smsto:`.
 - E-mail : ouvrir une application compatible avec une URI `mailto:`.
-- Vérifier qu'un gestionnaire compatible existe et offrir un message compréhensible si aucun n'est installé.
-- Ne pas demander de permission directe de téléphonie si l'intent satisfait l'usage.
+- Vérifier qu'un gestionnaire existe et afficher une erreur compréhensible sinon.
+- Ne pas demander de permission directe de téléphonie si les intents satisfont le besoin.
 
-## 8. Dépendances et build
+## 8. Build, dépendances et livraison
 
-- Utiliser le Gradle Wrapper et un catalogue de versions si le projet s'y prête.
-- Vérifier les licences et dépendances transitives avant tout choix de library CardDAV, vCard, UI ou d'injection.
-- Candidate DAV à évaluer : `dav4jvm` (MPL-2.0 annoncé, WebDAV/CardDAV pour JVM/Kotlin, utilisant Ktor) ; ne pas ajouter sans vérifier les versions, publications, dépendances et compatibilité avec la construction F-Droid.
-- Candidate vCard à évaluer : `ez-vcard` (BSD/FreeBSD déclaré dans les métadonnées, prend en charge vCard 2.1/3.0/4.0 ; vérifier la licence et les transitives de la version exacte).
-- Aucune bibliothèque n'est approuvée uniquement par son nom ou par les références ci-dessus. Voir `THIRD_PARTY.md`.
+- Utiliser le Gradle Wrapper, un catalogue de versions si utile et des versions mutuellement compatibles vérifiées à la date du bootstrap.
+- Vérifier les licences, transitives et origines de toutes les dépendances selon `THIRD_PARTY.md`.
+- Les candidates `dav4jvm` et `ez-vcard` ne sont pas approuvées par leur seule présence dans la documentation.
+- Les branches, revues et CI sont décrites dans `DEVELOPMENT_WORKFLOW.md` ; la version, le tag, les APK et GitHub/F-Droid sont décrits dans `RELEASING.md`.
+- Ne pas créer de workflow présenté comme fonctionnel tant que les tâches Gradle réelles ne sont pas créées et testées.
 
 ## 9. Questions à trancher
 
-1. Valider Contacts Provider ou Room privé.
-2. Définir si l'application doit gérer les contacts de tous les comptes ou permettre un filtre par source.
-3. Valider l'intégration de CardDAV comme compte système avec SyncAdapter.
-4. Définir le socle Android minSdk sans exclure inutilement d'appareils ; choisir les SDK actuels par consultation des sources officielles.
-5. Valider modèle de groupe/étiquette et son échange avec vCard/serveurs.
-6. Décider des modes d'authentification et des serveurs de test initiaux.
+1. Contacts Provider ou Room privé.
+2. Filtres et sources de contacts visibles dans l'application.
+3. Modèle d'édition des contacts agrégés ou issus de comptes externes.
+4. `applicationId`, nom public et socle `minSdk`/SDK vérifiés.
+5. Import/export vCard, groupes/étiquettes et ordre des phases.
+6. Serveurs CardDAV et méthodes d'authentification à tester.
+7. Politique de conflits et de suppression avant synchronisation bidirectionnelle.
+8. Signature, stockage de la clé et préparation des canaux GitHub/F-Droid avant la première distribution.
 
 ## Références
 
 - Contacts Provider : https://developer.android.com/identity/providers/contacts-provider
+- Contrat `RawContacts` : https://developer.android.com/reference/android/provider/ContactsContract.RawContacts
 - Architecture Android : https://developer.android.com/topic/architecture/recommendations
 - Compose lists : https://developer.android.com/develop/ui/compose/lists
 - Room : https://developer.android.com/training/data-storage/room

@@ -1,40 +1,43 @@
 # Bibliothèques et ressources tierces
 
-Cet inventaire doit être tenu à jour avec les dépendances réellement compilées et les ressources distribuées. Ne pas marquer un composant « approuvé » tant que sa version, son origine, sa licence, sa maintenance et ses dépendances transitives n'ont pas été vérifiées.
+Cet inventaire doit rester synchronisé avec les dépendances réellement résolues et les ressources effectivement distribuées. Ne pas marquer un composant « approuvé » tant que sa version exacte, son origine, sa licence, sa maintenance, ses transitives et son usage n'ont pas été vérifiés.
 
-## Règles
+## Règles obligatoires
 
-- Priorité aux composants libres, maintenus, documentés et compatibles avec une distribution source via F-Droid.
-- Pas de SDK propriétaire, publicité, analytics, télémétrie, dépendance obligatoire à Google Play Services ou service fermé pour les fonctions essentielles.
-- Utiliser des versions stables et figées. Éviter les versions dynamiques, snapshots et builds non reproductibles.
-- Examiner les dépendances transitives et le dépôt qui fournit chaque artefact.
-- Considérer la vérification Gradle des dépendances (empreintes, éventuellement signatures) après un bootstrap contrôlé ; ne pas approuver automatiquement des artefacts inconnus.
-- Pour chaque police, icône, illustration, image, son ou autre ressource, consigner l'origine et les droits de redistribution.
-- Réexaminer les licences et la politique F-Droid avant les versions publiées.
+- Priorité aux composants libres, maintenus, documentés et compatibles avec une distribution à partir des sources via F-Droid.
+- Pas de SDK propriétaire, de publicité, d'analytics, de télémétrie, de dépendance obligatoire à Google Play Services ou de service fermé pour les fonctions essentielles.
+- Utiliser des versions stables et figées ; éviter les versions dynamiques, snapshots et builds non reproductibles.
+- Examiner les dépôts de publication et la provenance de chaque artefact, y compris les plugins Gradle et les outils de build.
+- Après un bootstrap contrôlé, configurer la vérification Gradle des dépendances (sommes de contrôle et, lorsqu'elles sont disponibles et vérifiables, signatures). Ne pas approuver automatiquement un premier téléchargement non vérifié.
+- Pour chaque police, icône, illustration, image, son ou autre ressource, consigner l'origine, la licence, l'attribution et les droits de redistribution.
+- Réexaminer les licences, versions et règles F-Droid avant chaque release.
+- Ne pas exclure une dépendance transitive simplement pour réduire le poids ou la surface d'attaque sans vérifier que les fonctions nécessaires et les tests restent valides.
 
 ## Dépendances de l'application
 
-| Composant | Version réellement résolue | Usage | Licence vérifiée | Origine | Transitives examinées | Statut / note |
+| Composant | Version réellement résolue | Usage | Licence source vérifiée | Origine vérifiée | Transitives examinées | Décision/statut |
 |---|---|---|---|---|---|---|
-| [À renseigner après choix et inspection de Gradle] | — | — | — | — | — | Non approuvé |
+| À renseigner après le choix et l'inspection du build Gradle | — | — | — | — | — | Aucune dépendance approuvée à ce stade |
 
 ## Bibliothèques candidates étudiées, non approuvées
 
-Ces pistes doivent être réévaluées au moment du choix : leur présence ici ne signifie pas qu'elles sont incluses dans le projet.
+La présence d'un candidat dans ce tableau ne signifie pas qu'il est intégré ou approuvé.
 
-| Candidat | Usage possible | Licence déclarée / point de contrôle | Référence |
+| Candidat | Usage possible | Point de contrôle | Référence |
 |---|---|---|---|
-| `dav4jvm` | WebDAV/CardDAV en Kotlin/JVM | MPL-2.0 selon le dépôt amont ; vérifier version publiée, dépendances Ktor, disponibilité de l'artefact et compatibilité F-Droid avant adoption | https://github.com/bitfireAT/dav4jvm |
-| `ez-vcard` | Lecture/écriture vCard 2.1, 3.0 et 4.0 ; import/export | FreeBSD/BSD selon les métadonnées du projet ; vérifier la licence exacte distribuée et les dépendances transitives de la version retenue | https://github.com/mangstadt/ez-vcard |
+| `dav4jvm` | WebDAV/CardDAV en Kotlin/JVM | Vérifier la version exacte, la provenance de l'artefact, la licence source, Ktor, les transitives et la compatibilité du build source F-Droid. | https://github.com/bitfireAT/dav4jvm |
+| `ez-vcard` | Lecture/écriture vCard 2.1, 3.0 et 4.0 | Vérifier le fichier de licence de la version distribuée, le POM, les transitives et les fonctions effectivement utilisées avant toute exclusion. | https://github.com/mangstadt/ez-vcard |
 
-Une bibliothèque de protocole peut être réutilisée indépendamment de l'application qui l'a créée ; son utilisation ne doit pas rendre l'installation de DAVx⁵ obligatoire. Les obligations de licence et la chaîne de compilation restent à vérifier.
+Une bibliothèque de protocole peut être réutilisée sans rendre l'application d'origine obligatoire. Les obligations de licence et la chaîne de compilation doivent rester documentées.
 
 ## Polices, icônes et ressources
 
 | Ressource | Version/origine | Licence | Attribution requise | Fichier de licence conservé | Statut |
 |---|---|---|---|---|---|
-| [À compléter seulement si une ressource est retenue] | — | — | — | — | Non approuvé |
+| À compléter seulement si une ressource est retenue | — | — | — | — | Non approuvé |
 
-## Génération de l'inventaire
+## Contrôles par release
 
-Après création des fichiers Gradle, relever les versions réellement résolues et inspecter les artefacts transitifs, puis comparer avec les déclarations amont et leurs licences. Les rapports automatiques facilitent l'inventaire mais ne remplacent pas la vérification des licences, des ressources ou des conditions de redistribution.
+Avant chaque publication, comparer cet inventaire aux dépendances réellement résolues dans le build tagué. Tout nouvel artefact doit avoir une provenance et une licence vérifiées. Conserver les rapports de dépendances et de licences comme preuve CI ; ne publier aucun secret ni aucun fichier local sensible avec ces rapports.
+
+Les rapports automatiques aident à trouver les composants, mais ne remplacent pas la vérification des licences des sources, des fichiers réellement distribués, des exceptions et des conditions de redistribution.

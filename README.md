@@ -1,52 +1,61 @@
 # Contacts — nom de travail
 
-Application Android de gestion de contacts, conçue pour être rapide, claire, personnalisable et respectueuse de la vie privée.
+Application Android libre de gestion de contacts, conçue pour être rapide, claire, accessible et respectueuse de la vie privée.
 
-> **État : cadrage initial.** Le nom définitif, l'identifiant Android, la version minimale d'Android et plusieurs décisions d'architecture restent à confirmer. Ce dépôt ne contient pas encore une application compilable.
+> **État du projet : cadrage initial.** Le dépôt ne contient pas encore une application Android compilable. Les fonctionnalités et processus décrits ici sont des exigences ou des plans, pas la preuve qu'ils sont déjà implémentés. Aucun APK n'est actuellement annoncé comme disponible.
 
 ## Objectifs
 
-- Afficher, rechercher, consulter, créer, modifier et supprimer des contacts.
-- Proposer des actions explicites pour appeler, envoyer un SMS ou rédiger un e-mail, sans déclencher l'action automatiquement.
-- Gérer les photos de contact, les champs usuels et les importations/exportations vCard (`.vcf`).
-- Prévoir une synchronisation CardDAV directe avec plusieurs comptes, sans rendre un service externe obligatoire.
-- Fournir une interface Android moderne fondée sur Kotlin et Jetpack Compose, cohérente avec le système de design Soft Motion.
-- Être traduisible dès le début, utilisable hors ligne pour les données déjà disponibles, sans publicité ni télémétrie cachée.
+- Afficher, rechercher, consulter, créer, modifier et supprimer des contacts sans modifier accidentellement les données d'un autre compte.
+- Proposer des actions explicites pour appeler, envoyer un SMS ou rédiger un e-mail via une application système, sans déclencher l'action automatiquement.
+- Gérer les photos et les champs usuels, ainsi que l'import/export vCard (`.vcf`).
+- Prévoir une synchronisation directe CardDAV multi-comptes, sans rendre DAVx⁵ obligatoire.
+- Utiliser Kotlin et Jetpack Compose, avec le système visuel Soft Motion adapté aux besoins réels de l'application.
+- Localiser l'interface dès le départ, prendre en charge l'accessibilité et rester utilisable hors ligne pour les données locales.
+- N'inclure ni publicité ni télémétrie cachée. Aucun contact ne doit être transmis à un service tiers non explicitement choisi.
 
 ## État des fonctionnalités
 
-Aucune fonctionnalité n'est déclarée implémentée à ce stade. Les spécifications de `docs/PRODUCT.md` décrivent les objectifs et phases envisagés, et non un état d'avancement du code.
+Aucune fonctionnalité ne doit être considérée comme implémentée tant qu'elle n'existe pas dans le code et que ses critères d'acceptation ne sont pas vérifiés. Voir [`docs/PRODUCT.md`](docs/PRODUCT.md), [`docs/TESTING.md`](docs/TESTING.md) et [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Distribution prévue
 
 - Sources : dépôt public GitHub.
-- Paquets Android signés : GitHub Releases.
-- Distribution depuis les sources : candidature au dépôt principal F-Droid, sous réserve de conformité et d'acceptation.
+- Versions téléchargeables : GitHub Releases, lorsque la compilation, les tests et la signature de publication seront opérationnels.
+- Distribution depuis les sources : candidature au dépôt principal F-Droid, sous réserve de conformité et d'acceptation. La publication GitHub ne publie pas automatiquement l'application sur F-Droid.
 
-Les APK provenant de GitHub et de F-Droid peuvent être signés par des clés différentes et ne pas pouvoir se mettre à jour l'un l'autre sans désinstallation. Lire `docs/RELEASING.md` avant de choisir le canal d'installation.
+**Aucun APK n'est disponible à ce stade.** Quand les releases seront activées, chaque release GitHub devra correspondre à un tag de version immuable `vX.Y.Z` ou à une préversion explicite. Les assets attendus et les contrôles sont définis dans [`docs/RELEASING.md`](docs/RELEASING.md).
 
-## Licence
-
-Le projet vise la GNU General Public License version 3 **uniquement** (`GPL-3.0-only`). Voir `LICENSE`. Chaque bibliothèque, police, icône, illustration et ressource embarquée doit être vérifiée et consignée dans `THIRD_PARTY.md`.
+Les builds GitHub et F-Droid peuvent être signés avec des certificats différents et ne pas pouvoir se mettre à jour mutuellement. Lire la procédure de distribution avant de changer de canal ; une désinstallation peut entraîner une perte de données locales.
 
 ## Développement
 
-Les commandes de compilation ne sont pas encore renseignées, car les fichiers Gradle et les versions Android n'ont pas été choisis. Elles devront être testées sous Linux puis documentées ici après création du projet compilable.
+Les conventions de branches, de pull requests, de CI et de validation sont définies dans [`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md). Les commandes Gradle ne seront documentées qu'après création du projet et vérification des tâches réellement disponibles. Ne pas inventer des commandes de build.
 
-## Documentation
+## Licence
 
-- `docs/PROJECT_PROFILE.md` — faits du projet et décisions à prendre.
-- `docs/PRODUCT.md` — fonctionnalités attendues et critères d'acceptation.
-- `docs/ARCHITECTURE.md` — options et architecture à confirmer après comparaison.
-- `docs/CARDDAV_SYNC.md` — portée et exigences de synchronisation des contacts.
-- `docs/PRIVACY.md` — flux de données et garanties de confidentialité attendues.
-- `DESIGN.md` — système visuel Soft Motion et configuration de cette application.
-- `SECURITY.md` — règles de sécurité et signalement des vulnérabilités.
-- `THIRD_PARTY.md` — inventaire des dépendances et ressources tierces.
-- `docs/TESTING.md` — plan de validation.
-- `docs/RELEASING.md` — publication GitHub et préparation F-Droid.
-- `docs/TECHNICAL_RESEARCH.md` — références techniques ayant guidé le cadrage.
+Le projet vise la GNU General Public License version 3 **uniquement** (`GPL-3.0-only`). Voir [`LICENSE`](LICENSE). Chaque bibliothèque, police, icône, illustration et ressource embarquée doit être vérifiée, licenciée pour son usage prévu et recensée dans [`THIRD_PARTY.md`](THIRD_PARTY.md).
 
-## Confidentialité
+## Confidentialité et sécurité
 
-Les contacts ne doivent être transmis qu'aux comptes CardDAV que l'utilisateur configure explicitement et après une explication claire de la synchronisation. Aucun service tiers, suivi, publicité ou transfert caché n'est prévu. Ces engagements devront être vérifiés dans le manifeste, le code, les dépendances et les tests avant chaque publication.
+Les contacts restent dans la source de stockage choisie sur l'appareil, sauf export explicite ou synchronisation vers un compte CardDAV configuré par la personne qui utilise l'application. Les engagements de confidentialité doivent être vérifiés dans le manifeste fusionné, le code, les dépendances, les logs et le comportement réseau avant une release. Voir [`docs/PRIVACY.md`](docs/PRIVACY.md) et [`SECURITY.md`](SECURITY.md).
+
+## Documentation du projet
+
+- [`docs/PROJECT_PROFILE.md`](docs/PROJECT_PROFILE.md) — état du projet, décisions confirmées et décisions ouvertes.
+- [`docs/PRODUCT.md`](docs/PRODUCT.md) — objectifs fonctionnels et critères d'acceptation.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — options et architecture à approuver.
+- [`docs/CARDDAV_SYNC.md`](docs/CARDDAV_SYNC.md) — exigences de synchronisation des contacts.
+- [`docs/PRIVACY.md`](docs/PRIVACY.md) — flux de données et garanties attendues.
+- [`DESIGN.md`](DESIGN.md) — système visuel Soft Motion et configuration de cette application.
+- [`SECURITY.md`](SECURITY.md) — sécurité de l'application, des données et du processus de publication.
+- [`THIRD_PARTY.md`](THIRD_PARTY.md) — inventaire et audit des dépendances et ressources tierces.
+- [`docs/TESTING.md`](docs/TESTING.md) — stratégie de test et critères de livraison.
+- [`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md) — branches, revues et CI.
+- [`docs/RELEASING.md`](docs/RELEASING.md) — versionnement, tags, signatures, APK et GitHub Releases/F-Droid.
+- [`docs/TECHNICAL_RESEARCH.md`](docs/TECHNICAL_RESEARCH.md) — notes techniques datées et sources à revérifier.
+- [`CHANGELOG.md`](CHANGELOG.md) — historique des changements effectivement livrés.
+
+## Licence et statut de publication
+
+Les documents de conception ne remplacent ni les tests, ni une revue du code, ni l'approbation du propriétaire. Une fonctionnalité, un contrôle de sécurité ou une publication ne doit jamais être déclaré réussi sans preuve vérifiable.
